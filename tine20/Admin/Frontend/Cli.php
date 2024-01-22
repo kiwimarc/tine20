@@ -227,23 +227,18 @@ class Admin_Frontend_Cli extends Tinebase_Frontend_Cli_Abstract
 
         foreach ($containers['results'] as $container) {
           // Check if the container has no users
-          $user_search = $jsonFrontend->searchUsers([
-              [
-                'field' => 'container_id',
-                'operator' => 'equals',
-                'value' => $container['id'],
-              ],
-            ], null);
-            if (empty($user_search['totalcount'])) {
-                // Delete the container
-                $container = $jsonFrontend->getContainer($user_search['filter']['value']);
-                if ($opts->d) {
-                         echo "--DRY RUN-- Found " . $container['name'] . PHP_EOL;
-                } else {
-                        $jsonFrontend->deleteContainers([$container['id']]);
-                        echo 'Deleted container ' . $container['name'] . ' with no users.' . PHP_EOL;
-                }
+          if ($container['type'] == 'personal')
+            try {
+              $user = Tinebase_User::getInstance()->getFullUserById($container['owner_id']);
+            } catch (Tinebase_Exception_NotFound) {
+              if ($opts->d) {
+                echo "--DRY RUN-- Found " . $container['name'] . PHP_EOL;
+              } else {
+                $jsonFrontend->deleteContainers([$container['id']]);
+                echo 'Deleted container ' . $container['name'] . ' with no users.' . PHP_EOL;
+              }
             }
+          } 
         }
     }
     /**
